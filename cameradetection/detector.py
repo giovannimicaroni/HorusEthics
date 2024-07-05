@@ -3,6 +3,9 @@ from PIL import Image
 import random
 import pywt
 from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+from RFW_Dataset import RFW_Dataset
+import torch
 
 PATCH_SIZE = 100
 N_PATCHES = 15
@@ -67,10 +70,26 @@ def denoise_rgb(image_array):
 
         return denoised_image_array
 
-# def optimize_kmeans(data, max_k):
-     
+def optimize_kmeans(data, max_k):
+    means = []
+    inertias = []
+
+    for k in range(1, max_k):
+        kmeans = KMeans(n_clusters=k)
+        kmeans.fit(data)
+
+        means.append(k)
+        inertias.append(kmeans.inertia_)
+
+    fig=plt.subplots(figsize=(10,5))
+    plt.plot(means, inertias, 'o-')
+    plt.xlabel('Number of Clusters')
+    plt.ylabel('Inertia')
+    plt.grid(True)
+    plt.show()
 
 if __name__ == '__main__':
+    dataset = RFW_Dataset(csv_file='RFW.csv', transform=torch.tensor())
     image_path = 'm.010lz5_0001.jpg'
     image = Image.open(image_path)
     image_array = np.array(image)
@@ -87,6 +106,7 @@ if __name__ == '__main__':
          noise_vector.append(0.299*avg_noise_matrix[i][i][0] + 0.587*avg_noise_matrix[i][i][1] + 0.114*avg_noise_matrix[i][i][2]) 
     noise_vector = np.array(noise_vector)
     print(noise_vector.shape)
+    optimize_kmeans(noise_vector.reshape(-1, 1), 50)
 
     
     
