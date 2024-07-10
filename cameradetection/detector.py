@@ -8,6 +8,7 @@ from RFW_Dataset import RFW_Dataset
 import torch
 
 PATCH_SIZE = 100
+BATCH_SIZE = 1000
 N_PATCHES = 15
 
 # Function to extract a certain number of patches of a certain size from an image
@@ -89,25 +90,34 @@ def optimize_kmeans(data, max_k):
     plt.show()
 
 if __name__ == '__main__':
-    dataset = RFW_Dataset(csv_file='RFW.csv', transform=torch.tensor())
-    image_path = 'm.010lz5_0001.jpg'
-    image = Image.open(image_path)
-    image_array = np.array(image)
+    dataset = RFW_Dataset(csv_file='RFW.csv')
+    
+    # image_path = 'm.010lz5_0001.jpg'
+    # image = Image.open(image_path)
+    # image_array = np.array(image)
+    noise_vectors_list = []
+    print(len(dataset))
 
-    denoise_image_array = denoise_rgb(image_array)
-    noise = image_array - denoise_image_array
-    patches, patches_array = extract_patches(noise)
+    for i in range(1, len(dataset)):
+        image, ethnicity = dataset[i]
+        image_array = np.array(image)
+        denoise_image_array = denoise_rgb(image_array)
+        noise = image_array - denoise_image_array
+        patches, patches_array = extract_patches(noise)
 
-    avg_noise_matrix = np.mean(patches_array, axis=0) #matrix with the average noise of the 15 patches
-    print(avg_noise_matrix.shape)
+        avg_noise_matrix = np.mean(patches_array, axis=0) #matrix with the average noise of the 15 patches
+        # print(avg_noise_matrix.shape)
 
-    noise_vector = []
-    for i in range(PATCH_SIZE):
-         noise_vector.append(0.299*avg_noise_matrix[i][i][0] + 0.587*avg_noise_matrix[i][i][1] + 0.114*avg_noise_matrix[i][i][2]) 
-    noise_vector = np.array(noise_vector)
-    print(noise_vector.shape)
-    optimize_kmeans(noise_vector.reshape(-1, 1), 50)
-
+        noise_vector = []
+        for j in range(PATCH_SIZE):
+            noise_vector.append(0.299*avg_noise_matrix[j][j][0] + 0.587*avg_noise_matrix[j][j][1] + 0.114*avg_noise_matrix[j][j][2]) 
+        noise_vector = np.array(noise_vector)
+        noise_vectors_list.append(noise_vector)
+        print(f'{i} images done')
+        
+    noise_vectors_array = np.array(noise_vectors_list)
+    print(noise_vectors_array.shape)
+    optimize_kmeans(noise_vectors_array, 50)
     
     
         
