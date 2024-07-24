@@ -21,3 +21,7 @@ class IMG_Dataset(Dataset):
             image = self.transform(image)
         
         return (image, y_label)
+    
+    def get_img_path(self, index):
+        img_path = self.annotations.iloc[index, 0]
+        return img_path
