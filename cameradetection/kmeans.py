@@ -23,7 +23,7 @@ def optimize_kmeans(data, max_k):
     plt.show()
 
 if __name__ == '__main__':
-    noise_matrix = np.load('5camera_noises.npy')
+    noise_matrix = np.load('np++5cameras.npy')
     print(noise_matrix.shape)
     df = pd.DataFrame(noise_matrix)
     # optimize_kmeans(noise_matrix, 50)
