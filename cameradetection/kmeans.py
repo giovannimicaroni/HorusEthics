@@ -23,11 +23,11 @@ def optimize_kmeans(data, max_k):
     plt.show()
 
 if __name__ == '__main__':
-    noise_matrix = np.load('np++5cameras.npy')
+    noise_matrix = np.load('np++KANFace.npy')
     print(noise_matrix.shape)
     df = pd.DataFrame(noise_matrix)
     # optimize_kmeans(noise_matrix, 50)
-    kmeans = KMeans(n_clusters=5)
+    kmeans = KMeans(n_clusters=15)
     kmeans.fit(df)
     df['kmeans'] = kmeans.labels_
     print(df.head())

@@ -85,11 +85,12 @@ if __name__ == '__main__':
         patches, patches_array = extract_patches(noise)
 
         avg_noise_matrix = np.mean(patches_array, axis=0) #matrix with the average noise of the 15 patches
-
+        #matriz 100x100x3 da media dos 15 patches
         noise_vector = []
         for j in range(PATCH_SIZE):
             noise_vector.append(0.299*avg_noise_matrix[j][j][0] + 0.587*avg_noise_matrix[j][j][1] + 0.114*avg_noise_matrix[j][j][2]) 
-        noise_vector = np.array(noise_vector)
+        #TODO testar fazer para todos os pixeis, vai resultar em uma matriz 100x100, e depois fazer um pooling por coluna
+        noise_vector = np.array(noise_vector) # vetor de 100 elementos
         noise_vectors_list.append(noise_vector)
         print(f'{i+1} images done')
         
