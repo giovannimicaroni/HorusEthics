@@ -32,6 +32,7 @@ if __name__ == '__main__':
     ids_matrix = pd.read_csv(f'identitiesmatrix{DATASET}.csv')
     df = pd.DataFrame(noise_matrix)
     df['ids'] = ids_matrix.iloc[:, -1]
+    print(noise_matrix.shape)
     # optimize_kmeans(noise_matrix[:-1], 50)
     kmeans = KMeans(n_clusters=N_CLUSTERS)
     kmeans.fit(df.iloc[:, :-1])
