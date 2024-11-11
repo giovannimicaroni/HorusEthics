@@ -8,8 +8,9 @@ import numpy as np
 DATASET = 'WSD'
 IMAGES_DIR = '/home/gimicaroni/Documents/Datasets/WSD_Dataset/train'
 N_CLUSTERS = 20
-PROGRESS = 14
+PROGRESS = 0
 SIMILARITY_THRESHOLD = 0.5
+MAX_COMPARISONS_PER_IMAGE = 25
 
 def get_embedding(image_path):
     img = cv2.imread(image_path)
@@ -31,63 +32,75 @@ def compare_faces(emb1, emb2):
     return False
 
 def face_comparisons(grouped_df, app, current_dir, images_path):
+
     tp_percentages = []
     tn_percentages = []
     print(grouped_df['kmeans'].value_counts())
 
     try:
         for kmeans_value, group in grouped_df:
-            print(f'starting cluster {kmeans_value}...')
-            total_p = 0
-            total_n = 0
-            true_positives = 0
-            true_negatives = 0
+            if kmeans_value >= PROGRESS:
+                print(f'starting cluster {kmeans_value}...')
+                total_p = 0
+                total_n = 0
+                true_positives = 0
+                true_negatives = 0
 
-            for idx, (index, row) in enumerate(group.iterrows()):
-                current_identity = f'/{row['ids'][:5]}'
-                current_image_encodings = get_embedding(images_dir + current_identity + f'/{row['ids']}.jpg')
-                img_comparisons = 0
-                
-                for next_index, next_row in group.iloc[idx+1:].iterrows():
+                for idx, (index, row) in enumerate(group.iterrows()):
+                    current_identity = f'/{row['ids'][:5]}'
+                    current_image_encodings = get_embedding(images_dir + current_identity + f'/{row['ids']}.jpg')
+                    img_comparisons = 0
+                    
+                    if not current_image_encodings is None:
+                        sampled_group = group.sample(MAX_COMPARISONS_PER_IMAGE)
+                        for next_index, next_row in sampled_group.iterrows():
 
-                    next_identity = f'/{next_row['ids'][:5]}'
-                    next_image_encodings = get_embedding(images_dir + next_identity + f'/{next_row['ids']}.jpg')
+                            next_identity = f'/{next_row['ids'][:5]}'
+                            next_image_encodings = get_embedding(images_dir + next_identity + f'/{next_row['ids']}.jpg')
 
-                    if current_image_encodings != None and next_image_encodings != None:
-                        comparison_result = compare_faces(current_image_encodings, next_image_encodings)
-                        print(f'{current_identity} {next_identity}: {comparison_result}')
-                        
-                        if current_identity == next_identity:
-                            total_p += 1
-                            if comparison_result == True:
-                                true_positives += 1
-                        else:
-                            total_n += 1
-                            if comparison_result == False:
-                                true_negatives += 1
-                        img_comparisons += 1
-                        
+                            if not next_image_encodings is None:
+                                comparison_result = compare_faces(current_image_encodings, next_image_encodings)
+                                print(f'{current_identity} {next_identity}: {comparison_result}')
+                                
+                                if current_identity == next_identity:
+                                    total_p += 1
+                                    if comparison_result == True:
+                                        true_positives += 1
+                                else:
+                                    total_n += 1
+                                    if comparison_result == False:
+                                        true_negatives += 1
+                                img_comparisons += 1
+                                if img_comparisons > MAX_COMPARISONS_PER_IMAGE:
+                                    print(f'{MAX_COMPARISONS_PER_IMAGE} comparisons done for this image, continuing..')
+                                    break
+                            
 
-            tp_percentage = true_positives / total_p
-            tn_percentage = true_negatives / total_n
-            tp_percentages.append(tp_percentage)
-            tn_percentages.append(tn_percentage)
-            print(f'cluster {kmeans_value} done {tp_percentage}, {tn_percentage}')
+                tp_percentage = true_positives / total_p
+                tn_percentage = true_negatives / total_n
+                tp_percentages.append(tp_percentage)
+                tn_percentages.append(tn_percentage)
+                print(f'cluster {kmeans_value} done {tp_percentage}, {tn_percentage}')
 
     except KeyboardInterrupt:
-        print("Process interrupted, saving progress...")
+        print(f"Process interrupted, saving progress of cluster{kmeans_value}...")
         tn_percentages_array = np.array(tn_percentages)  
         tp_percentages_array = np.array(tp_percentages)
+        np.save(f'tps{DATASET}{PROGRESS}', tp_percentages_array)             
+        np.save(f'tns{DATASET}{PROGRESS}', tn_percentages_array)
         return 0
-        # np.save(f'tps{DATASET}{PROGRESS}', tp_percentages_array)             
-        # np.save(f'tns{DATASET}{PROGRESS}', tn_percentages_array)
     
+    tn_percentages_array = np.array(tn_percentages)  
+    tp_percentages_array = np.array(tp_percentages)
+    np.save(f'tps{DATASET}{PROGRESS}', tp_percentages_array)             
+    np.save(f'tns{DATASET}{PROGRESS}', tn_percentages_array)
+    print('Process completed successfully')
     return 1
 
 
 if __name__ == '__main__':
     app = FaceAnalysis(name='buffalo_l')  # 'buffalo_l' inclui ArcFace iResNet100
-    app.prepare(ctx_id=0, det_thresh=0.5)  # ctx_id=0 para CPU, ctx_id=1 para GPU
+    app.prepare(ctx_id=0, det_thresh=SIMILARITY_THRESHOLD)  # ctx_id=0 para CPU, ctx_id=1 para GPU
     current_dir = os.getcwd()
     images_dir = IMAGES_DIR
     images_path = os.path.join(current_dir, images_dir)
